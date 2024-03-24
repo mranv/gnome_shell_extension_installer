@@ -30,7 +30,7 @@ fn main() {
     let dependencies = [
         ("git", &["--version"]),
         ("meson", &["--version"]),
-        ("ninja", &["--version"]),
+        ("ninja-build", &["--version"]),
         ("gnome-extensions", &["--version"]),
     ];
 
