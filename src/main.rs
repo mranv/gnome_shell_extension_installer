@@ -14,37 +14,69 @@ fn check_dependency(command: &str, args: &[&str]) -> bool {
     }
 }
 
-fn main() {
-    let dependencies = [
-    ("git", &["--version"]),
-    ("meson", &["--version"]),
-    ("ninja", &["--version"]),
-    ("gnome-extensions", &["--version"]),
-];
-
-let mut missing_dependencies = Vec::new();
-
-for (command, args) in &dependencies {
-    if !check_dependency(command, *args) {
-        missing_dependencies.push(command);
+fn check_package_manager() -> &'static str {
+    if Command::new("apt").arg("-v").status().is_ok() {
+        return "apt";
+    } else if Command::new("dnf").arg("-v").status().is_ok() {
+        return "dnf";
+    } else if Command::new("yum").arg("-v").status().is_ok() {
+        return "yum";
+    } else {
+        return "unknown";
     }
 }
+
+fn main() {
+    let dependencies = [
+        ("git", &["--version"]),
+        ("meson", &["--version"]),
+        ("ninja", &["--version"]),
+        ("gnome-extensions", &["--version"]),
+    ];
+
+    let mut missing_dependencies = Vec::new();
+
+    for (command, args) in &dependencies {
+        if !check_dependency(command, *args) {
+            missing_dependencies.push(command);
+        }
+    }
+
     if !missing_dependencies.is_empty() {
         println!("Missing dependencies: {:?}", missing_dependencies);
         println!("Installing missing dependencies...");
 
-        // Install missing dependencies (assuming apt package manager for simplicity)
-        let install_cmd = Command::new("sudo")
-            .arg("apt")
-            .arg("install")
-            .args(&missing_dependencies)
-            .output()
-            .expect("Failed to execute apt install command.");
+        let package_manager = check_package_manager();
+        let mut install_cmd = match package_manager {
+            "apt" => {
+                let mut cmd = Command::new("sudo");
+                cmd.arg("apt").arg("install").args(&missing_dependencies);
+                cmd
+            }
+            "dnf" => {
+                let mut cmd = Command::new("sudo");
+                cmd.arg("dnf").arg("install").args(&missing_dependencies);
+                cmd
+            }
+            "yum" => {
+                let mut cmd = Command::new("sudo");
+                cmd.arg("yum").arg("install").args(&missing_dependencies);
+                cmd
+            }
+            _ => {
+                println!("Unsupported package manager. Please install the required dependencies manually.");
+                return;
+            }
+        };
 
-        if !install_cmd.status.success() {
+        let install_output = install_cmd
+            .output()
+            .expect("Failed to execute package installation command.");
+
+        if !install_output.status.success() {
             println!("Failed to install dependencies.");
-            io::stdout().write_all(&install_cmd.stdout).unwrap();
-            io::stderr().write_all(&install_cmd.stderr).unwrap();
+            io::stdout().write_all(&install_output.stdout).unwrap();
+            io::stderr().write_all(&install_output.stderr).unwrap();
             return;
         }
 
