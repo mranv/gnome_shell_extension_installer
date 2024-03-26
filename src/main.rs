@@ -85,7 +85,7 @@ fn main() {
 
     // Clone the repository
     let git_clone_output = Command::new("git")
-        .args(&["clone", "https://github.com/ubuntu/gnome-shell-extension-appindicator.git"])
+        .args(&["clone", "https://github.com/mranv/gnome-shell-extension-appindicator.git"])
         .output()
         .expect("Failed to execute git clone command.");
 
